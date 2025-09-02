@@ -242,6 +242,9 @@ git push origin production
 # SSH ke server
 ssh -i ~/.ssh/deploy_key kevin@10.160.40.148
 
+# Merubah otorisasi 
+sudo chown -R kevin:kevin /var/www/Deploy-Docker
+
 # Jalankan script auto deploy
 sudo /usr/local/bin/auto-deploy.sh
 
