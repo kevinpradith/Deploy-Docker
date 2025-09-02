@@ -1,150 +1,174 @@
 # Complete Git Workflow: Windows to GitHub to Ubuntu Server
 
-## Phase 1: Setup di Windows (Development Environment)
+A comprehensive guide for setting up a complete development and deployment workflow from Windows to GitHub to Ubuntu Server using Docker.
 
-### Step 1: Install dan Konfigurasi Git
+## Table of Contents
+- [Phase 1: Windows Development Environment Setup](#phase-1-windows-development-environment-setup)
+- [Phase 2: Ubuntu Server Setup](#phase-2-ubuntu-server-setup)
+- [Phase 3: Return to Windows - Complete Workflow](#phase-3-return-to-windows---complete-workflow)
+- [Phase 4: Project Files Setup](#phase-4-project-files-setup)
+- [Phase 5: Server Deployment](#phase-5-server-deployment)
+
+---
+
+## Phase 1: Windows Development Environment Setup
+
+### Step 1: Install and Configure Git
+
+Download Git from [https://git-scm.com/download/win](https://git-scm.com/download/win), install with default settings, then open Git Bash in VSCode.
+
 ```bash
-# Download Git dari https://git-scm.com/download/win
-# Install dengan setting default, lalu buka Git Bash di VsCode
-
-# Konfigurasi identitas
+# Configure identity
 git config --global user.name "Kevin Pradith"
 git config --global user.email "kevinpradithh@gmail.com"
 git config --global init.defaultBranch main
 git config --global core.autocrlf true
 ```
 
-### Step 2: Buat SSH Key untuk GitHub
+### Step 2: Create SSH Key for GitHub
+
 ```bash
-# Buat SSH key untuk GitHub
+# Create SSH key for GitHub
 ssh-keygen -t rsa -b 4096 -C "kevinpradithh@gmail.com"
-# Tekan Enter untuk lokasi default: C:\Users\Kevin\.ssh\id_rsa
+# Press Enter for default location: C:\Users\Kevin\.ssh\id_rsa
 
 # Start SSH agent
 eval $(ssh-agent -s)
 
-# Tambahkan SSH key
+# Add SSH key
 ssh-add ~/.ssh/id_rsa
 
-# Tampilkan public key
+# Display public key
 cat ~/.ssh/id_rsa.pub
 ```
 
-**Copy output public key**, lalu:
-1. Buka GitHub → Settings → SSH and GPG keys → New SSH key
-2. Paste public key dan save
+**Copy the public key output**, then:
+1. Open GitHub → Settings → SSH and GPG keys → New SSH key
+2. Paste public key and save
 
-### Step 3: Buat SSH Key untuk Server Ubuntu
+### Step 3: Create SSH Key for Ubuntu Server
+
 ```bash
-# Buat SSH key khusus untuk server
+# Create dedicated SSH key for server
 ssh-keygen -t rsa -b 4096 -C "deploy@server" -f ~/.ssh/deploy_key
 
-# Tampilkan public key server
+# Display server public key
 cat ~/.ssh/deploy_key.pub
 ```
-**Simpan output ini untuk step server nanti**
+**Save this output for the server setup step**
 
-### Step 4: Clone Repository dari GitHub
+### Step 4: Clone Repository from GitHub
+
 ```bash
-# Clone repository (otomatis setup remote 'origin')
+# Clone repository (automatically sets up 'origin' remote)
 git clone https://github.com/kevinpradith/Deploy-Docker.git
 cd Deploy-Docker
 
-# Cek remote yang ada
+# Check existing remotes
 git remote -v
 ```
-Output:
+
+Expected output:
 ```
 origin  https://github.com/kevinpradith/Deploy-Docker.git (fetch)
 origin  https://github.com/kevinpradith/Deploy-Docker.git (push)
 ```
 
-### Step 5: Setup Branch Production
+### Step 5: Setup Production Branch
+
 ```bash
-# Buat dan push branch production
+# Create and push production branch
 git checkout -b production
 git push -u origin production
 
-# Kembali ke main
+# Return to main branch
 git checkout main
 ```
 
 ---
 
-## Phase 2: Setup di Ubuntu Server
+## Phase 2: Ubuntu Server Setup
 
-### Step 6: Test dan Setup SSH Connection
+### Step 6: Test and Setup SSH Connection
+
 ```bash
-# Test koneksi SSH (dari Windows Git Bash)
+# Test SSH connection (from Windows Git Bash)
 ssh kevin@10.160.40.148
 exit
 
-# Copy SSH key ke server
+# Copy SSH key to server
 ssh-copy-id -i ~/.ssh/deploy_key kevin@10.160.40.148
 
-# Test koneksi dengan deploy key
+# Test connection with deploy key
 ssh -i ~/.ssh/deploy_key kevin@10.160.40.148
 ```
 
-### Step 7: Install Git di Ubuntu Server
+### Step 7: Install Git on Ubuntu Server
+
+Login via SSH to server, then run:
+
 ```bash
-# Login SSH ke server, lalu jalankan:
 sudo apt update
 sudo apt install git -y
+```
 
-### Step 8: Setup Repository Structure di Server
+### Step 8: Setup Repository Structure on Server
+
 ```bash
+mkdir /var/www
 
-mmkdir /var/www
-
-# Buat folder untuk website
+# Create folder for website
 cd /var/www/
 sudo mkdir Deploy-Docker
 sudo chown $USER:$USER Deploy-Docker
 cd Deploy-Docker
 
-# Clone repository dari GitHub
+# Clone repository from GitHub
 git clone https://github.com/kevinpradith/Deploy-Docker.git .
 
-# Set permission untuk web server
+# Set permissions for web server
 sudo chown -R www-data:www-data /var/www/Deploy-Docker
 sudo chmod -R 755 /var/www/Deploy-Docker
 ```
 
-### Step 9: Buat Auto Deploy Script
+### Step 9: Create Auto Deploy Script
+
 ```bash
-# Buat script untuk auto deploy
+# Create script for auto deployment
 sudo nano /usr/local/bin/auto-deploy.sh
 ```
 
-**Isi file dengan script berikut:**
+**File content:**
+
 ```bash
 #!/bin/bash
 echo "Auto deploying from GitHub..."
 
-# Pindah ke directory website
+# Navigate to website directory
 cd /var/www/Deploy-Docker
 
-# Pull perubahan terbaru dari production branch
+# Pull latest changes from production branch
 git fetch origin
 git checkout production
 git pull origin production
 
-# Stop container lama
+# Stop old containers
 docker compose down
 
-# Start container baru
+# Start new containers
 docker compose up -d
 
-echo "Deploy selesai! Docker container running"
+echo "Deploy complete! Docker container running"
 echo "Website available at: http://10.160.40.148"
 
 # Show running containers
 docker ps
 ```
 
+Make the script executable and test:
+
 ```bash
-# Buat file executable
+# Make file executable
 sudo chmod +x /usr/local/bin/auto-deploy.sh
 
 # Test script
@@ -153,23 +177,20 @@ sudo /usr/local/bin/auto-deploy.sh
 
 ---
 
-## Phase 3: Kembali ke Windows - Setup Complete Workflow
+## Phase 3: Return to Windows - Complete Workflow
 
-## Phase 3: Kembali ke Windows - Setup Project Files
+## Phase 4: Project Files Setup
 
----
+### Step 10: Create Docker Configuration Files
 
-## Phase 4: Setup Project Files
-
-### Step 10: Buat Docker Configuration Files
 ```bash
-# Pastikan di branch main
+# Ensure on main branch
 git checkout main
 ```
 
-# Buat file
-nano docker-compose.yml
-```bash
+Create `docker-compose.yml`:
+
+```yaml
 version: '3.8'
 
 services:
@@ -184,9 +205,9 @@ services:
     restart: unless-stopped
 ```
 
-# Buat file
-nano nginx.conf
-```bash
+Create `nginx.conf`:
+
+```nginx
 events {
     worker_connections 1024;
 }
@@ -213,56 +234,128 @@ http {
 }
 ```
 
-### Step 1: Initial Commit dan Push
+### Step 11: Initial Commit and Push
+
 ```bash
-# Commit semua file
+# Commit all files
 git add .
 git commit -m "feat: setup Docker configuration and sample website"
 
-# Push ke GitHub
+# Push to GitHub
 git push origin main
 ```
 
 ---
 
-## Phase 5: Deploy ke Server
+## Phase 5: Server Deployment
 
-### Step 11: Deploy ke Production
+### Step 12: Deploy to Production
+
 ```bash
-# Pindah ke branch production
+# Switch to production branch
 git checkout production
 
-# Merge dari main
+# Merge from main
 git merge main
 
-# Push ke GitHub
+# Push to GitHub
 git push origin production
 ```
 
-### Step 12: Deploy ke Server Ubuntu
+### Step 13: Deploy to Ubuntu Server
+
 ```bash
-# SSH ke server
+# SSH to server
 ssh -i ~/.ssh/deploy_key kevin@10.160.40.148
 
-# Merubah otorisasi 
+# Change ownership
 sudo chown -R kevin:kevin /var/www/Deploy-Docker
 
-# Jalankan script auto deploy
+# Run auto deploy script
 sudo /usr/local/bin/auto-deploy.sh
 
-# Keluar dari server
+# Exit from server
 exit
 ```
 
-### Step 13: Verify Deployment
+### Step 14: Verify Deployment
+
 ```bash
-# Test dari Windows
+# Test from Windows
 curl http://10.160.40.148
 
-# Atau SSH ke server untuk cek detail
+# Or SSH to server for detailed check
 ssh -i ~/.ssh/deploy_key kevin@10.160.40.148
 docker ps
 docker-compose logs web
 curl localhost
 exit
+```
+
+---
+
+## 🚀 Quick Commands Summary
+
+### Development Workflow (Windows)
+```bash
+# Make changes to code
+git add .
+git commit -m "your commit message"
+git push origin main
+
+# Deploy to production
+git checkout production
+git merge main
+git push origin production
+```
+
+### Server Deployment (Ubuntu)
+```bash
+# SSH to server and run auto deploy
+ssh -i ~/.ssh/deploy_key kevin@10.160.40.148
+sudo /usr/local/bin/auto-deploy.sh
+```
+
+### Verification
+```bash
+# Check website
+curl http://10.160.40.148
+
+# Check Docker containers
+docker ps
+```
+
+---
+
+## 📋 Prerequisites
+
+- **Windows**: Git, VSCode, SSH client
+- **Ubuntu Server**: Docker, Docker Compose, Git
+- **GitHub Account**: With SSH key configured
+- **Network Access**: Windows machine can reach Ubuntu server
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+1. **SSH Permission Denied**: Ensure SSH keys are properly configured
+2. **Docker Permission Issues**: Check file ownership and permissions
+3. **Port 80 Blocked**: Verify firewall settings on Ubuntu server
+4. **Git Merge Conflicts**: Resolve conflicts before merging branches
+
+### Useful Commands
+
+```bash
+# Check SSH connection
+ssh -T git@github.com
+
+# Check Docker status
+docker ps -a
+docker-compose logs
+
+# Check Git status
+git status
+git branch -a
 ```
