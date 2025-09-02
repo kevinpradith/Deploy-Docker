@@ -167,7 +167,8 @@ sudo /usr/local/bin/auto-deploy.sh
 git checkout main
 ```
 
-# Buat file docker-compose.yml
+# Buat file
+nano docker-compose.yml
 ```bash
 version: '3.8'
 
@@ -183,7 +184,8 @@ services:
     restart: unless-stopped
 ```
 
-# Buat nginx.conf
+# Buat file
+nano nginx.conf
 ```bash
 events {
     worker_connections 1024;
